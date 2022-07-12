@@ -156,6 +156,15 @@ frappe.ui.form.on('App', {
 					}
 				});
 			});
+			frm.add_custom_button(__('Push'), function(){
+				let key = frappe.datetime.get_datetime_as_string();
+				console_dialog(key);
+				frappe.call("bench_manager.bench_manager.doctype.app.app.push_branch", {
+                    doc: frm.doc,
+					key: key,
+					caller: "push"
+				});
+			});
 			frm.add_custom_button(__('New Branch'), function(){
 				var dialog = new frappe.ui.Dialog({
 					title: 'Create New Branch',

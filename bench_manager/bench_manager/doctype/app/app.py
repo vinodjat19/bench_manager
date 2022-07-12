@@ -9,6 +9,10 @@ import shlex
 import time
 from subprocess import PIPE, STDOUT, Popen, check_output
 
+
+import frappe, os, json
+from subprocess import PIPE, STDOUT, Popen, check_output
+
 import frappe
 from bench_manager.bench_manager.utils import (
 	safe_decode,
@@ -172,10 +176,32 @@ def get_branches(doctype, docname, current_branch):
 	verify_whitelisted_call()
 	app_path = os.path.join("..", "apps", docname)  #'../apps/'+docname
 	branches = (check_output("git branch".split(), cwd=app_path)).split()
+	branches = [branch.decode() for branch in branches]
 	branches.remove("*")
 	branches.remove(current_branch)
 	return branches
 
+
+@frappe.whitelist()
+def push_branch(doc, key, caller, branch_name=None, remote=None, commit_msg=None):
+    doc = json.loads(doc)
+    cwd = os.path.join("..", "apps", doc.get("name"))
+    remote = check_output("git remote".split(), cwd=cwd).decode().strip("\n")
+    commands = {
+        "push": [
+            "git push {remote} {branch_name}".format(
+					branch_name=doc.get("current_git_branch"), remote=remote
+				)
+        ]
+    }
+    frappe.enqueue(
+        "bench_manager.bench_manager.utils.run_command",
+        commands=commands[caller],
+        cwd=cwd,
+        doctype=doc.get("doctype"),
+        key=key,
+        docname=doc.get("name"),
+    )
 
 @frappe.whitelist()
 def get_remotes(docname):
